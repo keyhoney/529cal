@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://529cal.howlearn.kr/sitemap.xml

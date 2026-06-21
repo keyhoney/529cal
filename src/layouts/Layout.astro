@@ -2,13 +2,32 @@
 interface Props {
   title?: string;
   description?: string;
+  canonicalPath?: string;
+  ogImage?: string;
+  noindex?: boolean;
 }
 
-const {
-  title = '내신 등급 환산 · 대학별 입결 조회',
-  description = '5등급제·9등급제 내신 환산과 21~25학년도 대학별 교과 70% 컷을 한곳에서 확인하세요.',
-} = Astro.props;
 import '../styles/global.css';
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+  OG_IMAGE_PATH,
+  OG_IMAGE_ALT,
+} from '../config/site';
+
+const {
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
+  canonicalPath = '/',
+  ogImage = OG_IMAGE_PATH,
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = title.includes(SITE_NAME) ? title : `${title} · ${SITE_NAME}`;
+const canonicalUrl = new URL(canonicalPath, SITE_URL).href;
+const ogImageUrl = new URL(ogImage, SITE_URL).href;
 ---
 
 <!doctype html>
@@ -17,13 +36,33 @@ import '../styles/global.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
     <meta name="theme-color" content="#08080a" />
+    <meta name="author" content="HOWLEARN" />
+    <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
     />
-    <title>{title}</title>
+    <title>{pageTitle}</title>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={OG_IMAGE_ALT} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={OG_IMAGE_ALT} />
   </head>
   <body class="bg-mesh min-h-screen antialiased">
     <slot />

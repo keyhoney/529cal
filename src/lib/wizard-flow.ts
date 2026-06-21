@@ -1,6 +1,8 @@
 export type WizardStep = 1 | 2 | 3 | 4;
 
-export const SITE_URL = 'https://529cal.howlearn.kr';
+import { SITE_URL } from '../config/site';
+
+export { SITE_URL };
 
 const STEP_LABELS = ['이수 학기', '등급 입력', '환산 결과', '입결 조회'] as const;
 
