@@ -1,0 +1,46 @@
+# ── Build & generated output ──
+dist/
+.astro/
+public/data/admission-index.json
+
+# dependencies
+node_modules/
+
+# Vite / tooling cache
+.vite/
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# editors & IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# reverse-engineering / local scratch (arc-high 분석 임시 파일)
+tmp-*
+tmp.*
+
+# deploy platform local config
+.vercel/
+.netlify/
+
+# test coverage
+coverage/
