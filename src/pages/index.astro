@@ -227,7 +227,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
             <p class="grade-summary-desc">선택한 모집단위의 교과 70% 컷과 자동 비교됩니다.</p>
           </div>
 
-          <p id="admission-loading" class="text-sm text-[#d4d0c8]">입결 데이터 불러오는 중…</p>
+          <p id="admission-loading" class="hidden text-sm text-[#d4d0c8]">입결 데이터 불러오는 중…</p>
           <p id="admission-error" class="hidden text-sm text-red-400"></p>
 
           <div id="admission-form" class="hidden space-y-5">
@@ -337,14 +337,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     getSemesterOption,
     type SemesterOptionId,
   } from '../lib/grade-calculator';
-  import {
-    getDepartments,
-    getTracks,
-    getTypeNames,
-    getYearCuts,
-    loadAdmissionIndex,
-    type AdmissionIndex,
-  } from '../lib/admission-data';
+  import type { AdmissionIndex } from '../lib/admission-data';
   import { SearchCombobox } from '../lib/search-combobox';
   import { downloadCanvas, renderResultCardCanvas, shareCanvas } from '../lib/result-card';
   import {
@@ -357,6 +350,9 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
   } from '../lib/wizard-flow';
 
   type ConversionResult = NonNullable<ReturnType<typeof fromGrade5>>;
+  type AdmissionLib = typeof import('../lib/admission-data');
+
+  let admissionLib: AdmissionLib | null = null;
 
   type ConversionMode = '5to9' | '9to5';
   let currentStep: WizardStep = 1;
@@ -596,7 +592,51 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     else if (currentStep === 3) wizardNext.textContent = '입결 조회 →';
   }
 
-  function goToStep(step: WizardStep) {
+  async function getAdmissionLib(): Promise<AdmissionLib> {
+    return admissionLib ??= await import('../lib/admission-data');
+  }
+
+  async function ensureAdmissionData(): Promise<void> {
+    if (admissionData && admissionLib) {
+      loadingEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
+      formEl.classList.remove('hidden');
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+
+    loadingEl.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    formEl.classList.add('hidden');
+
+    try {
+      const lib = await getAdmissionLib();
+      const data = await lib.loadAdmissionIndex();
+      admissionData = data;
+      uniCombobox.setItems(data.universities);
+      loadingEl.classList.add('hidden');
+      formEl.classList.remove('hidden');
+      emptyEl.classList.remove('hidden');
+    } catch (err) {
+      loadingEl.classList.add('hidden');
+      errorEl.textContent = err instanceof Error ? err.message : '데이터 로드 실패';
+      errorEl.classList.remove('hidden');
+    }
+  }
+
+  function scheduleAdmissionPrefetch(): void {
+    const run = () => {
+      void getAdmissionLib().then((lib) => lib.prefetchAdmissionIndex());
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(run, { timeout: 5000 });
+    } else {
+      setTimeout(run, 3000);
+    }
+  }
+
+  async function goToStep(step: WizardStep) {
     currentStep = step;
     wizardPanels.forEach((panel) => {
       panel.classList.toggle('hidden', parseInt(panel.dataset.step!, 10) !== step);
@@ -605,7 +645,10 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     stepLabel.textContent = `${step} / 4 · ${getStepLabel(step)}`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (step >= 3) updateConverter();
-    if (step === 4) updateGradeSummary();
+    if (step === 4) {
+      updateGradeSummary();
+      await ensureAdmissionData();
+    }
     syncUrl(step);
     updateWizardNav();
   }
@@ -668,34 +711,34 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
   }
 
   function onUniChange() {
-    if (!admissionData || !uniCombobox.getValue()) {
+    if (!admissionData || !admissionLib || !uniCombobox.getValue()) {
       resetFromTrack();
       return;
     }
-    trackCombobox.setItems(getTracks(admissionData, uniCombobox.getValue()));
+    trackCombobox.setItems(admissionLib.getTracks(admissionData, uniCombobox.getValue()));
     trackCombobox.setEnabled(true);
     resetFromType();
   }
 
   function onTrackChange() {
-    if (!admissionData || !uniCombobox.getValue() || !trackCombobox.getValue()) {
+    if (!admissionData || !admissionLib || !uniCombobox.getValue() || !trackCombobox.getValue()) {
       resetFromType();
       return;
     }
     typeCombobox.setItems(
-      getTypeNames(admissionData, uniCombobox.getValue(), trackCombobox.getValue()),
+      admissionLib.getTypeNames(admissionData, uniCombobox.getValue(), trackCombobox.getValue()),
     );
     typeCombobox.setEnabled(true);
     resetFromDept();
   }
 
   function onTypeChange() {
-    if (!admissionData || !uniCombobox.getValue() || !trackCombobox.getValue() || !typeCombobox.getValue()) {
+    if (!admissionData || !admissionLib || !uniCombobox.getValue() || !trackCombobox.getValue() || !typeCombobox.getValue()) {
       resetFromDept();
       return;
     }
     deptCombobox.setItems(
-      getDepartments(
+      admissionLib.getDepartments(
         admissionData,
         uniCombobox.getValue(),
         trackCombobox.getValue(),
@@ -708,7 +751,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
   }
 
   function renderAdmissionResults() {
-    if (!admissionData) return;
+    if (!admissionData || !admissionLib) return;
     const uni = uniCombobox.getValue();
     const track = trackCombobox.getValue();
     const typeName = typeCombobox.getValue();
@@ -721,7 +764,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
       return;
     }
 
-    const cuts = getYearCuts(admissionData, uni, track, typeName, dept);
+    const cuts = admissionLib.getYearCuts(admissionData, uni, track, typeName, dept);
     if (cuts.length === 0) {
       resultsEl.classList.add('hidden');
       emptyEl.textContent = '해당 모집단위의 입결 데이터가 없습니다.';
@@ -781,13 +824,13 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     uniCombobox.clear();
     resetFromTrack();
 
-    goToStep(1);
+    void goToStep(1);
     updateConverter();
     showToast('처음부터 다시 계산합니다.');
   }
 
   wizardPrev.addEventListener('click', () => {
-    if (currentStep > 1) goToStep((currentStep - 1) as WizardStep);
+    if (currentStep > 1) void goToStep((currentStep - 1) as WizardStep);
   });
 
   wizardNext.addEventListener('click', () => {
@@ -800,7 +843,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
       applyResultToInputs(result);
     }
 
-    if (currentStep < 4) goToStep((currentStep + 1) as WizardStep);
+    if (currentStep < 4) void goToStep((currentStep + 1) as WizardStep);
   });
 
   document.getElementById('btn-download-card')?.addEventListener('click', () => {
@@ -886,19 +929,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     });
   });
 
-  loadAdmissionIndex()
-    .then((data) => {
-      admissionData = data;
-      uniCombobox.setItems(data.universities);
-      loadingEl.classList.add('hidden');
-      formEl.classList.remove('hidden');
-      emptyEl.classList.remove('hidden');
-    })
-    .catch((err) => {
-      loadingEl.classList.add('hidden');
-      errorEl.textContent = err instanceof Error ? err.message : '데이터 로드 실패';
-      errorEl.classList.remove('hidden');
-    });
+  scheduleAdmissionPrefetch();
 
   function restoreFromUrl() {
     const state = parseWizardState(window.location.search);
@@ -914,7 +945,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     }
     syncConversionModeUI();
     if (state.step && state.step >= 3) updateConverter();
-    if (state.step) goToStep(state.step);
+    if (state.step) void goToStep(state.step);
   }
 
   syncConversionModeUI();

@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://529cal.howlearn.kr',
+  build: {
+    inlineStylesheets: 'auto',
+  },
   vite: {
     plugins: [tailwindcss()]
   }

@@ -12,13 +12,41 @@ export interface AdmissionIndex {
 }
 
 let cache: AdmissionIndex | null = null;
+let loadPromise: Promise<AdmissionIndex> | null = null;
 
 export async function loadAdmissionIndex(): Promise<AdmissionIndex> {
   if (cache) return cache;
-  const res = await fetch('/data/admission-index.json');
-  if (!res.ok) throw new Error('입결 데이터를 불러오지 못했습니다.');
-  cache = (await res.json()) as AdmissionIndex;
-  return cache;
+  if (loadPromise) return loadPromise;
+
+  loadPromise = fetch('/data/admission-index.json')
+    .then((res) => {
+      if (!res.ok) throw new Error('입결 데이터를 불러오지 못했습니다.');
+      return res.json() as Promise<AdmissionIndex>;
+    })
+    .then((data) => {
+      cache = data;
+      return data;
+    })
+    .catch((err) => {
+      loadPromise = null;
+      throw err;
+    });
+
+  return loadPromise;
+}
+
+export function prefetchAdmissionIndex(): void {
+  if (cache || loadPromise) return;
+
+  const run = () => {
+    void loadAdmissionIndex();
+  };
+
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(run, { timeout: 5000 });
+  } else {
+    setTimeout(run, 3000);
+  }
 }
 
 export function getTracks(data: AdmissionIndex, uni: string): string[] {
