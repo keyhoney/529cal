@@ -14,9 +14,11 @@ export class SearchCombobox {
   private activeIndex = -1;
   private open = false;
   private enabled = true;
+  private readonly anchor: HTMLElement;
 
   constructor(private readonly opts: SearchComboboxOptions) {
     const { input, placeholder } = opts;
+    this.anchor = opts.list.parentElement!;
     if (placeholder) input.placeholder = placeholder;
 
     input.addEventListener('input', () => this.onInput());
@@ -28,13 +30,14 @@ export class SearchCombobox {
 
     document.addEventListener('click', (e) => {
       const target = e.target as Node;
-      if (!input.parentElement?.contains(target) && !this.opts.list.contains(target)) {
+      if (!this.anchor.contains(target) && !this.opts.list.contains(target)) {
         this.closeList();
       }
     });
 
     window.addEventListener('scroll', () => this.repositionDropdown(), true);
     window.addEventListener('resize', () => this.repositionDropdown());
+    window.visualViewport?.addEventListener('resize', () => this.repositionDropdown());
   }
 
   setItems(items: string[]) {
@@ -79,9 +82,23 @@ export class SearchCombobox {
     return value;
   }
 
+  private mountPortal() {
+    if (this.opts.list.parentElement === document.body) return;
+    document.body.appendChild(this.opts.list);
+    this.opts.list.classList.add('search-dropdown--portal');
+  }
+
+  private unmountPortal() {
+    if (this.opts.list.parentElement !== document.body) return;
+    this.anchor.appendChild(this.opts.list);
+    this.opts.list.classList.remove('search-dropdown--portal');
+    this.opts.list.style.cssText = '';
+  }
+
   private openList() {
     if (!this.enabled || this.items.length === 0) return;
     this.open = true;
+    this.mountPortal();
     this.opts.list.classList.remove('hidden');
     if (!this.opts.input.value.trim()) this.renderList('');
     this.repositionDropdown();
@@ -91,6 +108,7 @@ export class SearchCombobox {
     this.open = false;
     this.activeIndex = -1;
     this.opts.list.classList.add('hidden');
+    this.unmountPortal();
   }
 
   private repositionDropdown() {
@@ -99,14 +117,27 @@ export class SearchCombobox {
     const rect = this.opts.input.getBoundingClientRect();
     const list = this.opts.list;
     const gap = 6;
-    const maxHeight = Math.min(448, window.innerHeight - rect.bottom - gap - 16);
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewportOffsetTop = window.visualViewport?.offsetTop ?? 0;
+    const spaceBelow = viewportHeight - (rect.bottom - viewportOffsetTop) - gap - 16;
+    const spaceAbove = rect.top - viewportOffsetTop - gap - 16;
+    const preferredMax = Math.min(448, Math.max(spaceBelow, spaceAbove, 120));
+    const maxHeight = Math.max(120, preferredMax);
+    const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
 
     list.style.position = 'fixed';
-    list.style.top = `${rect.bottom + gap}px`;
     list.style.left = `${rect.left}px`;
     list.style.width = `${rect.width}px`;
-    list.style.maxHeight = `${Math.max(120, maxHeight)}px`;
-    list.style.zIndex = '100';
+    list.style.maxHeight = `${maxHeight}px`;
+    list.style.zIndex = '200';
+
+    if (openAbove) {
+      list.style.top = 'auto';
+      list.style.bottom = `${viewportHeight - (rect.top - viewportOffsetTop) + gap}px`;
+    } else {
+      list.style.bottom = 'auto';
+      list.style.top = `${rect.bottom + gap}px`;
+    }
   }
 
   private renderList(query: string) {
@@ -120,6 +151,7 @@ export class SearchCombobox {
       li.textContent = emptyText;
       list.appendChild(li);
       this.activeIndex = -1;
+      this.repositionDropdown();
       return;
     }
 
