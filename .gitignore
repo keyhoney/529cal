@@ -44,3 +44,8 @@ tmp.*
 
 # test coverage
 coverage/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example

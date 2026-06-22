@@ -10,15 +10,22 @@
     "build": "node scripts/build-admission-data.mjs && astro build",
     "build:data": "node scripts/build-admission-data.mjs",
     "generate:og": "node scripts/generate-og-image.mjs",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "npm run build && wrangler dev",
+    "astro": "astro",
+    "generate-types": "wrangler types",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^13.7.0",
     "@tailwindcss/vite": "^4.3.1",
     "astro": "^6.4.7",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
-    "sharp": "^0.35.2"
+    "sharp": "^0.35.2",
+    "wrangler": "^4.103.0"
+  },
+  "overrides": {
+    "vite": "^7"
   }
 }
