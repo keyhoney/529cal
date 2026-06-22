@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "node scripts/build-admission-data.mjs && astro build",
     "build:data": "node scripts/build-admission-data.mjs",
+    "generate:og": "node scripts/generate-og-image.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -16,5 +17,8 @@
     "@tailwindcss/vite": "^4.3.1",
     "astro": "^6.4.7",
     "tailwindcss": "^4.3.1"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.2"
   }
 }
