@@ -934,6 +934,53 @@ body {
   font-weight: 700;
 }
 
+.admission-route-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+}
+
+.admission-route-header {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .admission-route-header {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.admission-route-meta {
+  min-width: 0;
+}
+
+.admission-route-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94908a;
+}
+
+.admission-route-track,
+.admission-route-type {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #f8f6f2;
+  word-break: keep-all;
+}
+
+.admission-route-card .compare-verdict {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .notice-warn {
   display: flex;
   gap: 0.625rem;

@@ -224,7 +224,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
               <span>9등급 <strong id="summary-grade9">—</strong></span>
               <span>백분위 <strong id="summary-percentile">—</strong></span>
             </div>
-            <p class="grade-summary-desc">선택한 모집단위의 교과 70% 컷과 자동 비교됩니다.</p>
+            <p class="grade-summary-desc">선택한 모집단위의 전형·세부전형별 70% 컷과 자동 비교됩니다.</p>
           </div>
 
           <p id="admission-loading" class="hidden text-sm text-[#d4d0c8]">입결 데이터 불러오는 중…</p>
@@ -240,38 +240,6 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
                   <ul id="admission-uni-list" class="search-dropdown hidden" role="listbox"></ul>
                 </div>
               </div>
-              <div>
-                <label for="admission-track-input" class="label-premium block">전형</label>
-                <div class="search-combobox">
-                  <input
-                    id="admission-track-input"
-                    type="text"
-                    class="search-input search-input--picker"
-                    placeholder="전형 선택 또는 검색"
-                    autocomplete="off"
-                    spellcheck="false"
-                    disabled
-                  />
-                  <input type="hidden" id="admission-track-value" />
-                  <ul id="admission-track-list" class="search-dropdown hidden" role="listbox"></ul>
-                </div>
-              </div>
-              <div>
-                <label for="admission-type-input" class="label-premium block">세부전형</label>
-                <div class="search-combobox">
-                  <input
-                    id="admission-type-input"
-                    type="text"
-                    class="search-input search-input--picker"
-                    placeholder="세부전형 선택 또는 검색"
-                    autocomplete="off"
-                    spellcheck="false"
-                    disabled
-                  />
-                  <input type="hidden" id="admission-type-value" />
-                  <ul id="admission-type-list" class="search-dropdown hidden" role="listbox"></ul>
-                </div>
-              </div>
               <div class="sm:col-span-2">
                 <label for="admission-dept-input" class="label-premium block">모집단위</label>
                 <div class="search-combobox">
@@ -282,25 +250,9 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
               </div>
             </div>
 
-            <div id="admission-results" class="hidden">
-              <p class="label-premium mb-3">연도별 <span class="text-[#f0d88a]">70% 컷</span></p>
-              <div class="premium-table-wrap">
-                <table class="premium-table w-full min-w-[320px]">
-                  <thead>
-                    <tr>
-                      <th>대입연도</th>
-                      <th>교과 70% 컷</th>
-                      <th>모집인원</th>
-                      <th>경쟁률</th>
-                    </tr>
-                  </thead>
-                  <tbody id="admission-table-body"></tbody>
-                </table>
-              </div>
-              <p id="admission-compare" class="compare-verdict hidden"></p>
-            </div>
+            <div id="admission-results" class="hidden space-y-5"></div>
 
-            <p id="admission-empty" class="empty-state hidden">모집단위를 선택하면 연도별 입결을 표시합니다.</p>
+            <p id="admission-empty" class="empty-state hidden">모집단위를 선택하면 전형·세부전형별 입결을 표시합니다.</p>
           </div>
 
           <div class="wizard-share-row wizard-actions">
@@ -337,7 +289,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     getSemesterOption,
     type SemesterOptionId,
   } from '../lib/grade-calculator';
-  import type { AdmissionIndex } from '../lib/admission-data';
+  import type { AdmissionIndex, YearCut } from '../lib/admission-data';
   import { SearchCombobox } from '../lib/search-combobox';
   import { downloadCanvas, renderResultCardCanvas, shareCanvas } from '../lib/result-card';
   import {
@@ -393,8 +345,6 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
   const formEl = document.getElementById('admission-form')!;
   const resultsEl = document.getElementById('admission-results')!;
   const emptyEl = document.getElementById('admission-empty')!;
-  const tableBody = document.getElementById('admission-table-body')!;
-  const compareEl = document.getElementById('admission-compare')!;
 
   const uniCombobox = new SearchCombobox({
     input: document.getElementById('admission-uni-input') as HTMLInputElement,
@@ -408,20 +358,6 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     list: document.getElementById('admission-dept-list') as HTMLUListElement,
     hidden: document.getElementById('admission-dept-value') as HTMLInputElement,
     onChange: renderAdmissionResults,
-  });
-
-  const trackCombobox = new SearchCombobox({
-    input: document.getElementById('admission-track-input') as HTMLInputElement,
-    list: document.getElementById('admission-track-list') as HTMLUListElement,
-    hidden: document.getElementById('admission-track-value') as HTMLInputElement,
-    onChange: onTrackChange,
-  });
-
-  const typeCombobox = new SearchCombobox({
-    input: document.getElementById('admission-type-input') as HTMLInputElement,
-    list: document.getElementById('admission-type-list') as HTMLUListElement,
-    hidden: document.getElementById('admission-type-value') as HTMLInputElement,
-    onChange: onTypeChange,
   });
 
   const GAUGE_RADIUS = 54;
@@ -677,32 +613,14 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     updateWizardNav();
   }
 
-  function resetFromTrack() {
-    trackCombobox.setItems([]);
-    trackCombobox.setEnabled(false);
-    typeCombobox.setItems([]);
-    typeCombobox.setEnabled(false);
+  function resetAdmissionSelection() {
+    deptCombobox.clear();
+    deptCombobox.setItems([]);
     deptCombobox.setEnabled(false);
+    resultsEl.innerHTML = '';
     resultsEl.classList.add('hidden');
-    emptyEl.textContent = '모집단위를 선택하면 연도별 입결을 표시합니다.';
+    emptyEl.textContent = '모집단위를 선택하면 전형·세부전형별 입결을 표시합니다.';
     emptyEl.classList.remove('hidden');
-    compareEl.classList.add('hidden');
-  }
-
-  function resetFromType() {
-    typeCombobox.setItems([]);
-    typeCombobox.setEnabled(false);
-    deptCombobox.setEnabled(false);
-    resultsEl.classList.add('hidden');
-    emptyEl.classList.remove('hidden');
-    compareEl.classList.add('hidden');
-  }
-
-  function resetFromDept() {
-    deptCombobox.setEnabled(false);
-    resultsEl.classList.add('hidden');
-    emptyEl.classList.remove('hidden');
-    compareEl.classList.add('hidden');
   }
 
   function getMyGrade9(): number | null {
@@ -712,68 +630,35 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
 
   function onUniChange() {
     if (!admissionData || !admissionLib || !uniCombobox.getValue()) {
-      resetFromTrack();
+      resetAdmissionSelection();
       return;
     }
-    trackCombobox.setItems(admissionLib.getTracks(admissionData, uniCombobox.getValue()));
-    trackCombobox.setEnabled(true);
-    resetFromType();
-  }
 
-  function onTrackChange() {
-    if (!admissionData || !admissionLib || !uniCombobox.getValue() || !trackCombobox.getValue()) {
-      resetFromType();
-      return;
-    }
-    typeCombobox.setItems(
-      admissionLib.getTypeNames(admissionData, uniCombobox.getValue(), trackCombobox.getValue()),
-    );
-    typeCombobox.setEnabled(true);
-    resetFromDept();
-  }
-
-  function onTypeChange() {
-    if (!admissionData || !admissionLib || !uniCombobox.getValue() || !trackCombobox.getValue() || !typeCombobox.getValue()) {
-      resetFromDept();
-      return;
-    }
-    deptCombobox.setItems(
-      admissionLib.getDepartments(
-        admissionData,
-        uniCombobox.getValue(),
-        trackCombobox.getValue(),
-        typeCombobox.getValue(),
-      ),
-    );
+    deptCombobox.setItems(admissionLib.getDepartmentsForUniversity(admissionData, uniCombobox.getValue()));
     deptCombobox.setEnabled(true);
+    deptCombobox.clear();
+    resultsEl.innerHTML = '';
     resultsEl.classList.add('hidden');
     emptyEl.classList.remove('hidden');
   }
 
-  function renderAdmissionResults() {
-    if (!admissionData || !admissionLib) return;
-    const uni = uniCombobox.getValue();
-    const track = trackCombobox.getValue();
-    const typeName = typeCombobox.getValue();
-    const dept = deptCombobox.getValue();
+  function buildCompareHtml(cuts: YearCut[], myGrade: number | null): string {
+    if (myGrade === null) return '';
 
-    if (!uni || !track || !typeName || !dept) {
-      resultsEl.classList.add('hidden');
-      emptyEl.classList.remove('hidden');
-      compareEl.classList.add('hidden');
-      return;
-    }
+    const latest = cuts.find((row) => row.c !== null);
+    if (latest?.c === null || latest?.c === undefined) return '';
 
-    const cuts = admissionLib.getYearCuts(admissionData, uni, track, typeName, dept);
-    if (cuts.length === 0) {
-      resultsEl.classList.add('hidden');
-      emptyEl.textContent = '해당 모집단위의 입결 데이터가 없습니다.';
-      emptyEl.classList.remove('hidden');
-      return;
-    }
+    const diff = myGrade - latest.c;
+    const text =
+      diff <= 0
+        ? `입력하신 <strong>9등급 ${myGrade.toFixed(3)}</strong>은(는) ${latest.y}학년도 <strong>70% 컷 ${latest.c.toFixed(2)}</strong> 기준 <strong>합격권 안쪽</strong>입니다.`
+        : `입력하신 <strong>9등급 ${myGrade.toFixed(3)}</strong>은(는) ${latest.y}학년도 <strong>70% 컷 ${latest.c.toFixed(2)}</strong>보다 <strong>${diff.toFixed(3)} 등급</strong> 높습니다.`;
 
-    const myGrade = getMyGrade9();
-    tableBody.innerHTML = cuts
+    return `<p class="compare-verdict">${text}</p>`;
+  }
+
+  function renderCutsTable(cuts: YearCut[], myGrade: number | null): string {
+    const rows = cuts
       .map((row) => {
         const cutText = row.c === null ? '—' : row.c.toFixed(2);
         let rowClass = '';
@@ -789,22 +674,65 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
       })
       .join('');
 
+    return `<div class="premium-table-wrap">
+      <table class="premium-table w-full min-w-[320px]">
+        <thead>
+          <tr>
+            <th>대입연도</th>
+            <th>교과 70% 컷</th>
+            <th>모집인원</th>
+            <th>경쟁률</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  function renderAdmissionResults() {
+    if (!admissionData || !admissionLib) return;
+
+    const uni = uniCombobox.getValue();
+    const dept = deptCombobox.getValue();
+
+    if (!uni || !dept) {
+      resultsEl.innerHTML = '';
+      resultsEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+
+    const routes = admissionLib.getRoutesForDepartment(admissionData, uni, dept);
+    if (routes.length === 0) {
+      resultsEl.innerHTML = '';
+      resultsEl.classList.add('hidden');
+      emptyEl.textContent = '해당 모집단위의 입결 데이터가 없습니다.';
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+
+    const myGrade = getMyGrade9();
+    resultsEl.innerHTML = routes
+      .map(
+        (route) => `<section class="admission-route-card">
+          <div class="admission-route-header">
+            <div class="admission-route-meta">
+              <span class="admission-route-label">전형</span>
+              <p class="admission-route-track">${route.track}</p>
+            </div>
+            <div class="admission-route-meta">
+              <span class="admission-route-label">세부전형</span>
+              <p class="admission-route-type">${route.typeName}</p>
+            </div>
+          </div>
+          ${renderCutsTable(route.cuts, myGrade)}
+          ${buildCompareHtml(route.cuts, myGrade)}
+        </section>`,
+      )
+      .join('');
+
     emptyEl.classList.add('hidden');
     resultsEl.classList.remove('hidden');
-
-    if (myGrade !== null) {
-      const latest = cuts.find((r) => r.c !== null);
-      if (latest?.c !== null) {
-        const diff = myGrade - latest.c;
-        compareEl.innerHTML =
-          diff <= 0
-            ? `입력하신 <strong>9등급 ${myGrade.toFixed(3)}</strong>은(는) ${latest.y}학년도 <strong>70% 컷 ${latest.c.toFixed(2)}</strong> 기준 <strong>합격권 안쪽</strong>입니다.`
-            : `입력하신 <strong>9등급 ${myGrade.toFixed(3)}</strong>은(는) ${latest.y}학년도 <strong>70% 컷 ${latest.c.toFixed(2)}</strong>보다 <strong>${diff.toFixed(3)} 등급</strong> 높습니다.`;
-        compareEl.classList.remove('hidden');
-      }
-    } else {
-      compareEl.classList.add('hidden');
-    }
   }
 
   function restartWizard() {
@@ -822,7 +750,7 @@ import { SEMESTER_OPTIONS } from '../data/conversion-table';
     lastResult = null;
 
     uniCombobox.clear();
-    resetFromTrack();
+    resetAdmissionSelection();
 
     void goToStep(1);
     updateConverter();

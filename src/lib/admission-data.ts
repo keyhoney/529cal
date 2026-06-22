@@ -49,6 +49,52 @@ export function prefetchAdmissionIndex(): void {
   }
 }
 
+export interface AdmissionRoute {
+  track: string;
+  typeName: string;
+  cuts: YearCut[];
+}
+
+export function getDepartmentsForUniversity(data: AdmissionIndex, uni: string): string[] {
+  const uniNode = data.tree[uni];
+  if (!uniNode) return [];
+
+  const departments = new Set<string>();
+  for (const track of Object.keys(uniNode)) {
+    for (const typeName of Object.keys(uniNode[track])) {
+      for (const dept of Object.keys(uniNode[track][typeName])) {
+        departments.add(dept);
+      }
+    }
+  }
+
+  return [...departments].sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+export function getRoutesForDepartment(
+  data: AdmissionIndex,
+  uni: string,
+  dept: string,
+): AdmissionRoute[] {
+  const uniNode = data.tree[uni];
+  if (!uniNode) return [];
+
+  const routes: AdmissionRoute[] = [];
+  for (const track of Object.keys(uniNode)) {
+    for (const typeName of Object.keys(uniNode[track])) {
+      const cuts = uniNode[track][typeName][dept];
+      if (cuts?.length) {
+        routes.push({ track, typeName, cuts });
+      }
+    }
+  }
+
+  return routes.sort((a, b) => {
+    const byTrack = a.track.localeCompare(b.track, 'ko');
+    return byTrack !== 0 ? byTrack : a.typeName.localeCompare(b.typeName, 'ko');
+  });
+}
+
 export function getTracks(data: AdmissionIndex, uni: string): string[] {
   const node = data.tree[uni];
   if (!node) return [];
