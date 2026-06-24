@@ -41,6 +41,7 @@ tmp.*
 # deploy platform local config
 .vercel/
 .netlify/
+.wrangler/
 
 # test coverage
 coverage/
