@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+>
   <url>
     <loc>https://529cal.howlearn.kr/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://529cal.howlearn.kr/og-default.png</image:loc>
+      <image:title>529Cal · 내신 환산 · 입결 조회</image:title>
+      <image:caption>5등급제·9등급제 환산 계산기</image:caption>
+    </image:image>
   </url>
 </urlset>

@@ -78,6 +78,31 @@ body {
   border: 1px solid rgba(212, 175, 55, 0.35);
   color: #d4af37;
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+  overflow: hidden;
+}
+
+.premium-logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.site-representative {
+  margin: 0 auto 1.5rem;
+  max-width: 14rem;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.site-representative img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
 }
 
 .premium-badge {
