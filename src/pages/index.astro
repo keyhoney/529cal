@@ -35,16 +35,6 @@ import {
 
   <main class="mx-auto max-w-2xl px-5 py-8 sm:py-12">
     <h1 class="sr-only">{DEFAULT_TITLE}</h1>
-    <figure class="site-representative">
-      <img
-        src={OG_IMAGE_PATH}
-        alt={OG_IMAGE_ALT}
-        width={OG_IMAGE_WIDTH}
-        height={OG_IMAGE_HEIGHT}
-        decoding="async"
-        fetchpriority="high"
-      />
-    </figure>
 
     <div id="wizard" class="wizard">
       <div class="wizard-progress">
@@ -300,6 +290,15 @@ import {
   <div id="wizard-toast" class="wizard-toast" role="status" aria-live="polite"></div>
 
   <footer class="premium-footer">
+    <figure class="sr-only">
+      <img
+        src={OG_IMAGE_PATH}
+        alt={OG_IMAGE_ALT}
+        width={OG_IMAGE_WIDTH}
+        height={OG_IMAGE_HEIGHT}
+        decoding="async"
+      />
+    </figure>
     <p><span class="gold-text font-semibold">529Cal</span> · 내신 등급 환산 · 대학별 입결 조회</p>
     <p>교육 상담·입시 참고용 도구</p>
   </footer>
