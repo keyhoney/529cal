@@ -396,10 +396,11 @@ import {
   }
 
   function getPercentileTier(percentile: number): string {
-    if (percentile <= 10) return '최상위권';
+    if (percentile <= 5) return '최상위권';
     if (percentile <= 30) return '상위권';
-    if (percentile <= 50) return '중상위권';
-    if (percentile <= 70) return '중위권';
+    if (percentile <= 40) return '중상위권';
+    if (percentile <= 55) return '중위권';    
+    if (percentile <= 70) return '중하위권';
     return '하위권';
   }
 
